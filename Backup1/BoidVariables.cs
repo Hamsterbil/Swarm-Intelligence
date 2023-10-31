@@ -24,5 +24,5 @@ public class BoidVariables : ScriptableObject {
     public float collisionRadius;
     public float collisionAvoidDst;
     public float avoidCollisionForce;
-    public LayerMask wallMask;
+    public LayerMask obstacleMask;
 }

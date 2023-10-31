@@ -9,21 +9,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 37daaf3c8517c434e949720657c9d250, type: 3}
+  m_Script: {fileID: 11500000, guid: 86d120f7bf6e87f4f9afea7bc3bccfd9, type: 3}
   m_Name: Boid Variables
   m_EditorClassIdentifier: 
-  minSpeed: 10
-  maxSpeed: 20
-  maxSteerForce: 10
-  cohesionRadius: 3
-  separationRadius: 2
+  color: {r: 0, g: 0, b: 0, a: 0}
+  amountOfLeaders: 1
+  minSpeed: 60
+  maxSpeed: 60
+  maxSteerForce: 50
+  cohesionRadius: 10
+  separationRadius: 4
   cubeSize: 100
-  separationForce: 10
-  alignmentForce: 2
-  cohesionForce: 5
+  separationWeight: 0
+  alignmentWeight: 10
+  cohesionWeight: 0
+  leaderSeparationWeight: 10
   collisionRadius: 2
-  collisionAvoidDst: 1
-  avoidCollisionForce: 100
-  wallMask:
+  collisionAvoidDst: 10
+  avoidCollisionWeight: 0
+  obstacleMask:
     serializedVersion: 2
-    m_Bits: 8
+    m_Bits: 64

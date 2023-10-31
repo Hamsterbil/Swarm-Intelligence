@@ -5,72 +5,53 @@ using UnityEngine;
 public class Manager : MonoBehaviour
 {
     public Boid[] boids;
-    public BoidVariables variables;
-    public ComputeShader compute;
+    public Variables variables;
 
-    // Start is called before the first frame update
     void Start()
     {
         boids = FindObjectsOfType<Boid>();
         foreach (Boid boid in boids)
         {
-            boid.Assembleeeeee(variables);
+            boid.StartBoid(variables);
         }
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (boids != null) {
-
-            int numBoids = boids.Length;
-            var boidData = new BoidData[numBoids];
-
-            for (int i = 0; i < boids.Length; i++) {
-                boidData[i].position = boids[i].position;
-                boidData[i].forward = boids[i].forward;
+        foreach (Boid boid in boids)
+        {            
+            boid.neighborCount = 0;
+            boid.velocity = Vector3.zero;
+            boid.separation = Vector3.zero;
+            boid.alignment = Vector3.zero;
+            boid.cohesion = Vector3.zero;
+            foreach (Boid otherBoid in boids)
+            {
+                if (boid != otherBoid)
+                {
+                    float distance = Vector3.Distance(boid.position, otherBoid.position);
+                    if (distance < variables.cohesionRadius)
+                    {
+                        boid.alignment += otherBoid.forward;
+                        boid.cohesion += otherBoid.position;
+                        boid.neighborCount++;
+                        if (distance < variables.separationRadius)
+                        {
+                            boid.separation += boid.transform.position - otherBoid.transform.position;
+                        }
+                    }
+                }
             }
-
-            var boidBuffer = new ComputeBuffer (numBoids, BoidData.Size);
-            boidBuffer.SetData (boidData);
-
-            compute.SetBuffer (0, "boids", boidBuffer);
-            compute.SetInt ("numBoids", boids.Length);
-            compute.SetFloat ("viewRadius", variables.cohesionRadius);
-            compute.SetFloat ("avoidRadius", variables.separationRadius);
-
-            int threadGroups = Mathf.CeilToInt (numBoids / (float) 1024);
-            compute.Dispatch (0, threadGroups, 1, 1);
-
-            boidBuffer.GetData (boidData);
-
-            for (int i = 0; i < boids.Length; i++) {
-                boids[i].averageAlignment = boidData[i].flockAlignment;
-                boids[i].averageCohesion = boidData[i].flockCohesion;
-                boids[i].averageAvoidance = boidData[i].flockAvoidance;
-                boids[i].numNeighbors = boidData[i].numNeighbors;
-
-                boids[i].UpdateBoid();
-            }
-
-            boidBuffer.Release ();
+            boid.UpdateBoid();
         }
     }
 
-    public struct BoidData
+    private void OnDrawGizmos()
     {
-        public Vector3 position;
-        public Vector3 forward;
-
-        public Vector3 flockAlignment;
-        public Vector3 flockAvoidance;
-        public Vector3 flockCohesion;
-        public int numNeighbors;
-
-        public static int Size {
-            get {
-                return sizeof (float) * 3 * 5 + sizeof (int);
-            }
-        }
+        Gizmos.color = Color.white;
+        Gizmos.DrawWireCube(
+            Vector3.zero,
+            new Vector3(variables.cubeSize, variables.cubeSize, variables.cubeSize)
+        );
     }
 }

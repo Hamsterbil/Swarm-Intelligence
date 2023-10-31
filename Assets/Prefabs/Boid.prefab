@@ -42,17 +42,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 7066420276249118862}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 80b9f042c7b362a4eb821ab04cf6b824, type: 3}
+  m_Script: {fileID: 11500000, guid: a71a54065e288c9469599dbe74835050, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  variables: {fileID: 11400000, guid: 736828f3872fe2f4fb520f91f7e7e75a, type: 2}
   velocity: {x: 0, y: 0, z: 0}
-  position: {x: 0, y: 0, z: 0}
-  forward: {x: 0, y: 0, z: 0}
   acceleration: {x: 0, y: 0, z: 0}
-  averageHeading: {x: 0, y: 0, z: 0}
-  averageAvoidance: {x: 0, y: 0, z: 0}
-  center: {x: 0, y: 0, z: 0}
-  numNeighbors: 0
+  forward: {x: 0, y: 0, z: 0}
+  position: {x: 0, y: 0, z: 0}
+  cohesion: {x: 0, y: 0, z: 0}
+  separation: {x: 0, y: 0, z: 0}
+  alignment: {x: 0, y: 0, z: 0}
+  neighborCount: 0
 --- !u!1001 &8318633360281282372
 PrefabInstance:
   m_ObjectHideFlags: 0
