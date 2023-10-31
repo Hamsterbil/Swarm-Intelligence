@@ -8,7 +8,6 @@ public class Boid : MonoBehaviour
     public float cubeSize;
 
     public Vector3 velocity;
-    public Vector3 acceleration;
 
     public Vector3 forward;
     public Vector3 position;
@@ -19,10 +18,11 @@ public class Boid : MonoBehaviour
 
     public int neighborCount;
     public int separationCount;
-    public bool drawToggle;
 
     public bool isLeader;
-    public int leaderNumber;
+    public bool isPredator;
+
+    public bool drawToggle;
 
     public void StartBoid(Variables boidVariables)
     {
@@ -37,36 +37,27 @@ public class Boid : MonoBehaviour
 
     public void UpdateBoid()
     {
-        acceleration = Vector3.zero;
-
-        // if (imBouttaCollide())
-        // {
-        //     Vector3 avoidForce = navigate(rayCircle()) * variables.avoidCollisionWeight;
-        //     acceleration += avoidForce;
-        // }
-
-        // withinCube();
-
-        // velocity += acceleration * Time.deltaTime;
-        // Vector3 dir = velocity / velocity.magnitude;
-
-        // velocity = dir * speed;
-
-        // transform.position += velocity * Time.deltaTime;
-        // transform.forward = velocity.normalized;
-        // position = transform.position;
-        // forward = dir;
         if (neighborCount > 0)
         {
             alignment /= neighborCount;
             cohesion /= neighborCount;
         }
         velocity += separation * variables.separationWeight;
-        velocity += (alignment - transform.forward) * variables.alignmentWeight;
-        velocity += (cohesion - transform.position) * variables.cohesionWeight;
+        velocity += (alignment - velocity) * variables.alignmentWeight;
+        velocity += (cohesion - velocity) * variables.cohesionWeight;
 
+        withinCube();
+        if (imBouttaCollide())
+        {
+            velocity += rayCircle() * variables.avoidCollisionWeight + velocity * Time.deltaTime;
+        }
+
+        velocity += velocity * Time.deltaTime;
+
+        Vector3 dir = velocity / velocity.magnitude;
         float speed = Mathf.Clamp(velocity.magnitude, variables.minSpeed, variables.maxSpeed);
-        velocity = (velocity / velocity.magnitude) * speed;
+        velocity = dir * speed;
+
         transform.position += velocity * Time.deltaTime;
         transform.forward = velocity.normalized;
         position = transform.position;
@@ -77,14 +68,12 @@ public class Boid : MonoBehaviour
             new Color(1.0f, 0.64f, 0.0f),
             (float)neighborCount / 5
         );
+        if (isLeader)
+        {
+            GetComponentInChildren<MeshRenderer>().material.color = Color.green;
+        }
     }
-
-    public Vector3 navigate(Vector3 dir)
-    {
-        Vector3 steer = dir - velocity;
-        steer = Vector3.ClampMagnitude(steer, variables.maxSteerForce);
-        return steer;
-    }
+    
 
     public void withinCube()
     {
@@ -110,11 +99,11 @@ public class Boid : MonoBehaviour
             }
             if (transform.position.y > cubeSize)
             {
-                y_offset = 1;
+                y_offset = -1;
             }
             else if (transform.position.y > -cubeSize)
             {
-                y_offset = -1;
+                y_offset = 1;
             }
             if (transform.position.z > cubeSize)
             {
@@ -183,11 +172,6 @@ public class Boid : MonoBehaviour
             Gizmos.DrawWireSphere(transform.position, variables.cohesionRadius);
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, variables.separationRadius);
-            if (isLeader)
-            {
-                Gizmos.color = Color.yellow;
-                Gizmos.DrawWireSphere(transform.position, variables.separationRadius * 5);
-            }
         }
 
         Gizmos.color = Color.blue;

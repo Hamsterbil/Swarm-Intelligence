@@ -4,24 +4,32 @@ using UnityEngine;
 
 [CreateAssetMenu]
 public class Variables : ScriptableObject {
-    //All different variables
+
+    [Header("Spawner and playfield")]
+    public float cubeSize;
+    public int boidCount;
+
+    [Header("Boid variables")]
     public Color color;
+    public int leaderCount;
+    public int predatorCount;
+
     public float minSpeed;
     public float maxSpeed;
-    public float maxSteerForce;
 
     public float cohesionRadius;
     public float separationRadius;
-    
-    public float cubeSize;
 
-    [Range(0.0F, 10.0F)]
+    [Header("Boid weights / factors")]
+    [Range(0.0F, 0.1F)]
     public float separationWeight;
-    [Range(0.0F, 10.0F)]
+    [Range(0.0F, 0.1F)]
     public float alignmentWeight;
-    [Range(0.0F, 10.0F)]
+    [Range(0.0F, 0.1F)]
     public float cohesionWeight;
 
+
+    [Header("Collision detection")]
     public float collisionRadius;
     public float collisionAvoidDst;
     public float avoidCollisionWeight;

@@ -14,32 +14,52 @@ public class Manager : MonoBehaviour
         {
             boid.StartBoid(variables);
         }
+        boids[0].isLeader = true;
     }
 
     void Update()
     {
         foreach (Boid boid in boids)
-        {            
+        {
             boid.neighborCount = 0;
-            boid.velocity = Vector3.zero;
             boid.separation = Vector3.zero;
             boid.alignment = Vector3.zero;
             boid.cohesion = Vector3.zero;
             foreach (Boid otherBoid in boids)
             {
+                if (boid.isLeader)
+                {
+                    break;
+                }
                 if (boid != otherBoid)
                 {
                     float distance = Vector3.Distance(boid.position, otherBoid.position);
                     if (distance < variables.cohesionRadius)
                     {
-                        boid.alignment += otherBoid.forward;
-                        boid.cohesion += otherBoid.position;
-                        boid.neighborCount++;
-                        if (distance < variables.separationRadius)
+                        if (otherBoid.isLeader)
                         {
-                            boid.separation += boid.transform.position - otherBoid.transform.position;
+                            boid.alignment += otherBoid.velocity;
+                            boid.cohesion += otherBoid.position;
+                            boid.neighborCount++;
+                            if (distance < variables.separationRadius)
+                            {
+                                boid.separation += boid.transform.position - otherBoid.transform.position;
+                            }
+                            break;
                         }
+                        else
+                        {
+                            boid.alignment += otherBoid.velocity;
+                            boid.cohesion += otherBoid.position;
+                            boid.neighborCount++;
+                            if (distance < variables.separationRadius)
+                            {
+                                boid.separation += boid.transform.position - otherBoid.transform.position;
+                            }
+                        }
+
                     }
+
                 }
             }
             boid.UpdateBoid();
