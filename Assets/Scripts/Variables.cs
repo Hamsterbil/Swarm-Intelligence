@@ -21,11 +21,11 @@ public class Variables : ScriptableObject {
     public float separationRadius;
 
     [Header("Boid weights / factors")]
-    [Range(0.0F, 0.1F)]
+    [Range(0.0F, 1F)]
     public float separationWeight;
-    [Range(0.0F, 0.1F)]
+    [Range(0.0F, 10F)]
     public float alignmentWeight;
-    [Range(0.0F, 0.1F)]
+    [Range(0.0F, 10F)]
     public float cohesionWeight;
 
 

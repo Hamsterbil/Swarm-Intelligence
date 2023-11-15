@@ -14,7 +14,7 @@ public class Manager : MonoBehaviour
         {
             boid.StartBoid(variables);
         }
-        boids[0].isLeader = true;
+        boids[0].drawToggle = true;
     }
 
     void Update()
@@ -57,9 +57,16 @@ public class Manager : MonoBehaviour
                                 boid.separation += boid.transform.position - otherBoid.transform.position;
                             }
                         }
-
                     }
-
+                }
+                if (boid.drawToggle)
+                {
+                    //Draw ray between boid and neighbor
+                    float distance = Vector3.Distance(boid.position, otherBoid.position);
+                    if (distance < variables.cohesionRadius)
+                    {
+                        Debug.DrawRay(boid.position, otherBoid.position - boid.position, Color.red);
+                    }
                 }
             }
             boid.UpdateBoid();

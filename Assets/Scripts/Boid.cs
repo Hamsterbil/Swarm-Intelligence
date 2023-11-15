@@ -8,6 +8,7 @@ public class Boid : MonoBehaviour
     public float cubeSize;
 
     public Vector3 velocity;
+    public Vector3 acceleration;
 
     public Vector3 forward;
     public Vector3 position;
@@ -37,22 +38,24 @@ public class Boid : MonoBehaviour
 
     public void UpdateBoid()
     {
+        acceleration = Vector3.zero;
         if (neighborCount > 0)
         {
             alignment /= neighborCount;
             cohesion /= neighborCount;
+
+            acceleration += separation * variables.separationWeight;
+            acceleration += alignment * variables.alignmentWeight;
+            acceleration += cohesion * variables.cohesionWeight;
         }
-        velocity += separation * variables.separationWeight;
-        velocity += (alignment - velocity) * variables.alignmentWeight;
-        velocity += (cohesion - velocity) * variables.cohesionWeight;
 
         withinCube();
         if (imBouttaCollide())
         {
-            velocity += rayCircle() * variables.avoidCollisionWeight + velocity * Time.deltaTime;
+            acceleration += rayCircle() * variables.avoidCollisionWeight + acceleration * Time.deltaTime;
         }
 
-        velocity += velocity * Time.deltaTime;
+        velocity += acceleration * Time.deltaTime;
 
         Vector3 dir = velocity / velocity.magnitude;
         float speed = Mathf.Clamp(velocity.magnitude, variables.minSpeed, variables.maxSpeed);
@@ -75,51 +78,42 @@ public class Boid : MonoBehaviour
     }
     
 
-    public void withinCube()
+   public void withinCube()
+{
+    float x_offset = 0;
+    float y_offset = 0;
+    float z_offset = 0;
+
+    if (transform.position.x > cubeSize)
     {
-        int x_offset = 0;
-        int y_offset = 0;
-        int z_offset = 0;
-        if (
-            transform.position.x > cubeSize
-            || transform.position.x < -cubeSize
-            || transform.position.y > cubeSize
-            || transform.position.y < -cubeSize
-            || transform.position.z > cubeSize
-            || transform.position.z < -cubeSize
-        )
-        {
-            if (transform.position.x > cubeSize)
-            {
-                x_offset = 1;
-            }
-            else if (transform.position.x > -cubeSize)
-            {
-                x_offset = -1;
-            }
-            if (transform.position.y > cubeSize)
-            {
-                y_offset = -1;
-            }
-            else if (transform.position.y > -cubeSize)
-            {
-                y_offset = 1;
-            }
-            if (transform.position.z > cubeSize)
-            {
-                z_offset = 1;
-            }
-            else if (transform.position.z > -cubeSize)
-            {
-                z_offset = -1;
-            }
-            transform.position = new Vector3(
-                -transform.position.x + x_offset,
-                -transform.position.y + y_offset,
-                -transform.position.z + z_offset
-            );
-        }
+        x_offset = -2 * cubeSize;
     }
+    else if (transform.position.x < -cubeSize)
+    {
+        x_offset = 2 * cubeSize;
+    }
+
+    if (transform.position.y > cubeSize)
+    {
+        y_offset = -2 * cubeSize;
+    }
+    else if (transform.position.y < -cubeSize)
+    {
+        y_offset = 2 * cubeSize;
+    }
+
+    if (transform.position.z > cubeSize)
+    {
+        z_offset = -2 * cubeSize;
+    }
+    else if (transform.position.z < -cubeSize)
+    {
+        z_offset = 2 * cubeSize;
+    }
+
+    transform.position += new Vector3(x_offset, y_offset, z_offset);
+}
+
 
     bool imBouttaCollide()
     {
@@ -172,6 +166,16 @@ public class Boid : MonoBehaviour
             Gizmos.DrawWireSphere(transform.position, variables.cohesionRadius);
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, variables.separationRadius);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawLine(transform.position, cohesion);
+            Gizmos.color = Color.black;
+            Gizmos.DrawLine(transform.position, separation);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawLine(transform.position, alignment);
+            // Gizmos.color = Color.green;
+            // Gizmos.DrawLine(transform.position, acceleration);
+            Gizmos.color = Color.white;
+            Gizmos.DrawLine(transform.position, cohesion + alignment + separation);
         }
 
         Gizmos.color = Color.blue;
