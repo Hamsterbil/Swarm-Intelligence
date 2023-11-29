@@ -5,7 +5,6 @@ using UnityEngine;
 public class Boid : MonoBehaviour
 {
     public Variables variables;
-    public float cubeSize;
 
     public Vector3 velocity;
     public Vector3 acceleration;
@@ -18,103 +17,64 @@ public class Boid : MonoBehaviour
     public Vector3 alignment;
 
     public int neighborCount;
-    public int separationCount;
 
-    public bool isLeader;
-    public bool isPredator;
+    // public bool isLeader;
+    // public bool isPredator;
 
     public bool drawToggle;
 
     public void StartBoid(Variables boidVariables)
     {
         neighborCount = 0;
-        separationCount = 0;
         variables = boidVariables;
-        cubeSize = variables.cubeSize / 2;
         position = transform.position;
         forward = transform.forward;
         velocity = forward * Random.Range(variables.minSpeed, variables.maxSpeed);
     }
 
-    public void UpdateBoid()
+    public void UpdateBoid(bool checkCollision, float cohesionWeight, float alignmentWeight, float separationWeight)
     {
         acceleration = Vector3.zero;
+
         if (neighborCount > 0)
         {
             alignment /= neighborCount;
             cohesion /= neighborCount;
 
-            acceleration += separation * variables.separationWeight;
-            acceleration += alignment * variables.alignmentWeight;
-            acceleration += cohesion * variables.cohesionWeight;
+            separation = SteerTowards(separation) * separationWeight;
+            alignment = SteerTowards(alignment) * alignmentWeight;
+            cohesion = SteerTowards(cohesion - position) * cohesionWeight;
+
+            acceleration += separation;
+            acceleration += alignment;
+            acceleration += cohesion;
         }
 
-        withinCube();
-        if (imBouttaCollide())
+        if (imBouttaCollide() && checkCollision)
         {
-            acceleration += rayCircle() * variables.avoidCollisionWeight + acceleration * Time.deltaTime;
+            acceleration += rayCircle() * variables.avoidCollisionWeight;
         }
+
+        velocity *= 1.0f - variables.velocityDamping * Time.deltaTime;
 
         velocity += acceleration * Time.deltaTime;
-
-        Vector3 dir = velocity / velocity.magnitude;
-        float speed = Mathf.Clamp(velocity.magnitude, variables.minSpeed, variables.maxSpeed);
+        float speed = velocity.magnitude;
+        Vector3 dir = velocity / speed;
+        speed = Mathf.Clamp(speed, variables.minSpeed, variables.maxSpeed);
         velocity = dir * speed;
 
-        transform.position += velocity * Time.deltaTime;
-        transform.forward = velocity.normalized;
-        position = transform.position;
-        forward = transform.forward;
+        position += velocity * Time.deltaTime;
+        forward = dir;
 
-        GetComponentInChildren<MeshRenderer>().material.color = Color.Lerp(
-            variables.color,
-            new Color(1.0f, 0.64f, 0.0f),
-            (float)neighborCount / 5
-        );
-        if (isLeader)
-        {
-            GetComponentInChildren<MeshRenderer>().material.color = Color.green;
-        }
+        transform.position = position;
+        transform.forward = forward;
+
+        // GetComponentInChildren<MeshRenderer>().material.color = Color.Lerp(
+        //     variables.color,
+        //     new Color(1.0f, 0.64f, 0.0f),
+        //     (float)neighborCount / 5
+        // );
     }
-    
-
-   public void withinCube()
-{
-    float x_offset = 0;
-    float y_offset = 0;
-    float z_offset = 0;
-
-    if (transform.position.x > cubeSize)
-    {
-        x_offset = -2 * cubeSize;
-    }
-    else if (transform.position.x < -cubeSize)
-    {
-        x_offset = 2 * cubeSize;
-    }
-
-    if (transform.position.y > cubeSize)
-    {
-        y_offset = -2 * cubeSize;
-    }
-    else if (transform.position.y < -cubeSize)
-    {
-        y_offset = 2 * cubeSize;
-    }
-
-    if (transform.position.z > cubeSize)
-    {
-        z_offset = -2 * cubeSize;
-    }
-    else if (transform.position.z < -cubeSize)
-    {
-        z_offset = 2 * cubeSize;
-    }
-
-    transform.position += new Vector3(x_offset, y_offset, z_offset);
-}
-
-
     bool imBouttaCollide()
     {
         RaycastHit hit;
@@ -129,7 +89,6 @@ public class Boid : MonoBehaviour
             )
         )
         {
-            GetComponentInChildren<MeshRenderer>().material.color = Color.white;
             return true;
         }
         return false;
@@ -157,28 +116,22 @@ public class Boid : MonoBehaviour
         }
         return forward;
     }
+    
+    Vector3 SteerTowards (Vector3 vector) {
+        return vector.normalized * variables.maxSpeed - velocity;
+    }
 
     private void OnDrawGizmos()
     {
         if (drawToggle)
         {
             Gizmos.color = Color.green;
-            Gizmos.DrawWireSphere(transform.position, variables.cohesionRadius);
+            Gizmos.DrawWireSphere(position, variables.cohesionRadius);
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, variables.separationRadius);
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawLine(transform.position, cohesion);
-            Gizmos.color = Color.black;
-            Gizmos.DrawLine(transform.position, separation);
-            Gizmos.color = Color.blue;
-            Gizmos.DrawLine(transform.position, alignment);
-            // Gizmos.color = Color.green;
-            // Gizmos.DrawLine(transform.position, acceleration);
-            Gizmos.color = Color.white;
-            Gizmos.DrawLine(transform.position, cohesion + alignment + separation);
+            Gizmos.DrawWireSphere(position, variables.separationRadius);
         }
 
         Gizmos.color = Color.blue;
-        Gizmos.DrawRay(transform.position, forward * 2);
+        Gizmos.DrawRay(position, forward * 2);
     }
 }

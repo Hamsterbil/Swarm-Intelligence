@@ -4,130 +4,191 @@ using UnityEngine;
 
 public class PSO : MonoBehaviour
 {
-    public Boid[] boids;
-    public Variables variables;
+    public Manager manager; // Manager script to access boids
+    public Variables variables; // Variables scriptable object for main boid simulation
+    // private Particle[] batch; // Batch of particles to run simulations on, to evaluate fitness
+    public Particle[] particles; // Array of particles
+    private Boid[] boids; // Array of Boids. Used to run each simulation, where position is reset for each particle
+    public Boid boidPrefab; // Boid prefab to instantiate Boids. I don't know how to instantiate a Boid without a prefab
+    private float time; // Time variable to measure how long the algorithm takes to run
+    private bool isRunning = false; // Boolean to check if the algorithm is running
 
-    public float bestCohesionWeight;
-    public float bestAlignmentWeight;
-    public float bestSeparationWeight;
+    [Header("Simulation Parameters (For Fitness Evaluation)")]
+    // public int concurrentSimulations; // Number of concurrent simulations (N)
+    public int simulationTicks; // Number of ticks per simulation (S)
+    public int numBoids; // Number of boids per simulation (B)
+    private Vector3[] boidPositions; // Array of boid positions
+    private Vector3[] boidDirections; // Array of boid forwards
 
-    // PSO variables
-    public int numParticles = 30;
-    public float maxVelocity = 1.0f;
-    public float inertiaWeight = 0.5f;
-    public float cognitiveWeight = 1.0f;
-    public float socialWeight = 1.0f;
+    [Header("PSO parameters")]
+    public int iterations; // Number of iterations (T)
+    public int numParticles; // Population size (A)
+    private float inertiaWeight; // Inertia weight (W)
+    public float inertiaStart; // Initial inertia weight (W1)
+    public float inertiaEnd; // Final inertia weight (W2)
+    public float cognitiveWeight; // Positive constant (C1)
+    public float socialWeight; // Positive constant (C2)
+    public float problemSpace; // Problem space (X)
+    public float bestFitness; // Stores the best fitness score (fb)
+    public float convergence;
+    public float[] bestPosition; // Stores the best parameter values (gb)
 
-    // Fitness-related constants
-    public float separationThreshold = 2.0f;
-    public float cohesionThreshold = 5.0f;
-    public float optimalSeparationWeight = 2.0f;
-    public float optimalAlignmentWeight = 0.5f;
-    public float optimalCohesionWeight = 5.0f;
-
-    void Start()
+    [System.Serializable]
+    public class Particle
     {
-        boids = FindObjectsOfType<Boid>();
-        foreach (Boid boid in boids)
-        {
-            boid.StartBoid(variables);
-        }
-
-        // Optimize the parameters using PSO
-        OptimizeParameters();
+        public float[] position; // Current position (Xi)
+        public float[] velocity; // Current velocity (Vi)
+        public float[] pBestPosition; // Personal best position (Pi)
+        public float pBestFitness; // Personal best fitness (Pb)
+        public float simulationFitness; // Fitness during simulation. Used to divide by simulation ticks to get average fitness per simulation tick
     }
 
-    void OptimizeParameters()
+    private void Update()
     {
-        float[] bestPosition = new float[3];  // Stores the best parameter values.
-        float bestFitness = float.MinValue;    // Stores the best fitness score.
+        //Press space to start the algorithm. This is step one.
+        if (Input.GetKeyDown(KeyCode.Space) && !isRunning)
+        {
+            inertiaWeight = inertiaStart;
+            bestFitness = float.MinValue;
+            bestPosition = new float[3] {
+            Random.Range(0f, problemSpace), // cohesionWeight
+            Random.Range(0f, problemSpace), // alignmentWeight
+            Random.Range(0f, problemSpace) // separationWeight
+            };
+            Debug.Log("Cohesion weight: " + bestPosition[0] + ", Alignment weight: " + bestPosition[1] + ", Separation weight: " + bestPosition[2]);
+            //Multiple simulations (Batches) are possible, but it has been disabled since speed is not a priority
+            // if (concurrentSimulations > numParticles)
+            // {
+            //     concurrentSimulations = numParticles;
+            // }
+            // else if (concurrentSimulations < 1)
+            // {
+            //     concurrentSimulations = 1;
+            // }
+            time = Time.realtimeSinceStartup;
+            isRunning = true;
+            //--------------------STEP ONE! INITIALIZE PARTICLES--------------------//
+            InitializeParticles();
+            InitializeBoids();
+            OptimizeParameters();
+        }
+    }
 
-        // Initialize PSO particles
-        Particle[] particles = new Particle[numParticles];
+    private void InitializeParticles()
+    {
+        //Particles are initialized with random positions. Positions are the values meant to be optimized (cohesion, alignment, separation)
+        particles = new Particle[numParticles];
         for (int i = 0; i < numParticles; i++)
         {
             particles[i] = new Particle();
             particles[i].position = new float[3] {
-                Random.Range(0f, 1f), // cohesionWeight
-                Random.Range(0f, 0.9f), // alignmentWeight
-                Random.Range(0f, 1f) // separationWeight
+                Random.Range(0f, problemSpace), // cohesionWeight
+                Random.Range(0f, problemSpace), // alignmentWeight
+                Random.Range(0f, problemSpace) // separationWeight
             };
             particles[i].velocity = new float[3];
-            particles[i].pBestPosition = particles[i].position;
+            particles[i].pBestPosition = new float[3];
+            particles[i].pBestFitness = float.MinValue;
         }
-
-        int maxIterations = 100;
-        int iteration = 0;
-
-        while (iteration < maxIterations)
+    }
+    private void InitializeBoids()
+    {
+        boids = new Boid[numBoids];
+        boidPositions = new Vector3[numBoids];
+        boidDirections = new Vector3[numBoids];
+        for (int i = 0; i < numBoids; i++)
         {
-            foreach (Particle particle in particles)
-            {
-                // Evaluate fitness using your boid simulation and the parameters
-                float fitness = EvaluateFitness(particle.position[0], particle.position[1], particle.position[2]);
+            boidPositions[i] = transform.position + Random.insideUnitSphere * 2;
+            boidDirections[i] = Random.rotation * Vector3.forward;
+            boids[i] = Instantiate(boidPrefab, boidPositions[i], Quaternion.LookRotation(boidDirections[i]));
+            boids[i].StartBoid(variables);
+        }
+    }
 
-                // Update personal best (pBest) if fitness improves
-                if (fitness > EvaluateFitness(particle.pBestPosition[0], particle.pBestPosition[1], particle.pBestPosition[2]))
+    private void OptimizeParameters()
+    {
+        //--------------------STEP TWO! ITERATE X AMOUNT OF TIMES--------------------//
+        //BEGINNING OF ITERATION LOOP IS FITNESS EVALUATION
+        for (int i = 0; i < iterations; i++)
+        {
+            // for (int j = 0; j < particles.Length; j += concurrentSimulations)
+            // {
+            //Batches are created to run multiple simulations at the same time. Not necessary, since simulations are not run in parallel
+            // int remainingParticles = Mathf.Min(concurrentSimulations, particles.Length - j);
+            // batch = new Particle[remainingParticles];
+            // System.Array.Copy(particles, j, batch, 0, remainingParticles);
+
+            //CREATE BOID SIMULATION(S) TO EVALUATE FITNESS. MAIN SIM IS NOT USED, ONLY FOR VIEWING RESULTS
+            //PART OF STEP TWO!
+            convergence = 0;
+            foreach (Particle particle in particles) //batch can be used instead of particles, if batches are chosen to be used
+            {
+                particle.simulationFitness = 0;
+                ShortBoidSimulation(particle);
+                float averageFitness = particle.simulationFitness;
+                //If the fitness is better than the personal best fitness, update the personal best fitness and position
+                if (averageFitness > particle.pBestFitness)
                 {
+                    // Debug.Log("Particle " + System.Array.IndexOf(particles, particle) + " has a new personal best fitness: " + averageFitness + ", at iteration " + i + ".");
+                    particle.pBestFitness = averageFitness;
                     particle.pBestPosition = particle.position;
                 }
-
-                // Update global best (gBest) if fitness improves
-                if (fitness > bestFitness)
+                //If the fitness is better than the global best fitness, update the global best fitness and position
+                if (averageFitness > bestFitness)
                 {
+                    bestFitness = averageFitness;
                     bestPosition = particle.position;
-                    bestFitness = fitness;
                 }
+                //Calculate convergence
+                convergence += particle.simulationFitness / particles.Length;
+                //--------------------STEP THREE! UPDATE PARTICLE VELOCITY AND POSITION--------------------//
+                UpdateParticle(particle, i);
             }
-
-            // Update particle velocities and positions based on PSO equations
-            foreach (Particle particle in particles)
+            // If convergence is 2% close to bestfitness, then stop the algorithm
+            if (convergence >= bestFitness * 0.98f)
             {
-                UpdateParticleVelocity(particle, bestPosition);
-                UpdateParticlePosition(particle);
+                Debug.Log("Stopping criteria met at iteration " + i + " with convergence " + convergence + " and best fitness " + bestFitness + ".");
+                break;
             }
-
-            // Update weights based on fitness performance
-            UpdateWeightsBasedOnFitness(EvaluateFitness(bestPosition[0], bestPosition[1], bestPosition[2]));
-
-            iteration++;
+            // }
         }
-
-        // Set the best parameters after optimization
-        bestCohesionWeight = bestPosition[0];
-        bestAlignmentWeight = bestPosition[1];
-        bestSeparationWeight = bestPosition[2];
-
-        // Apply the best parameters to your Unity boid simulation
-        ApplyParametersToBoidSimulation(bestCohesionWeight, bestAlignmentWeight, bestSeparationWeight);
+        //--------------------STEP FOUR! WHEN STOPPING CRITERIA IS MET, FINISH--------------------//
+        Finish();
     }
 
-    void UpdateWeightsBasedOnFitness(float fitness)
+    private void ShortBoidSimulation(Particle particle)
     {
-        // Adjust weights based on fitness performance
-        variables.cohesionWeight = Mathf.Lerp(variables.cohesionWeight, optimalCohesionWeight, fitness);
-        variables.alignmentWeight = Mathf.Lerp(variables.alignmentWeight, optimalAlignmentWeight, fitness);
-        variables.separationWeight = Mathf.Lerp(variables.separationWeight, optimalSeparationWeight, fitness);
+        //Variables are set
+        float cohesionWeight = particle.position[0];
+        float alignmentWeight = particle.position[1];
+        float separationWeight = particle.position[2];
 
-        // Apply weights to boid simulation
-        ApplyParametersToBoidSimulation(variables.cohesionWeight, variables.alignmentWeight, variables.separationWeight);
+        //Boid simulation is run for a short amount of ticks
+        for (int i = 0; i < simulationTicks; i++)
+        {
+            //Boid vectors are calculated
+            manager.UpdateBoids(boids, true, false, cohesionWeight, alignmentWeight, separationWeight);
+            //Fitness is calculated each tick
+            particle.simulationFitness += EvaluateFitness() / simulationTicks;
+        }
+        //Reset boid positions for next particle
+        for (int i = 0; i < numBoids; i++)
+        {
+            boids[i].position = boidPositions[i];
+            boids[i].forward = boidDirections[i];
+        }
     }
 
-    float EvaluateFitness(float cohesionWeight, float alignmentWeight, float separationWeight)
+    private float EvaluateFitness()
     {
-        // Implement your evaluation logic here, using the provided fitness functions
-        float separationFitness = SeparationFitness(boids);
-        float alignmentFitness = AlignmentFitness(boids);
-        float cohesionFitness = CohesionFitness(boids);
+        float fitness = 1;
+        float cost = 0;
+        float cost1 = 0;
+        float cost2 = 0;
+        float cost3 = 0;
 
-        // Combine fitness components based on your optimization goals
-        // This is a simple example; you might use a weighted sum or other combination methods
-        return separationFitness + alignmentFitness + cohesionFitness;
-    }
-
-    float SeparationFitness(Boid[] boids)
-    {
-        float totalSeparation = 0.0f;
+        Vector3 averageAlignment = Vector3.zero;
+        Vector3 center = Vector3.zero;
 
         foreach (Boid boid in boids)
         {
@@ -136,103 +197,95 @@ public class PSO : MonoBehaviour
                 if (boid != otherBoid)
                 {
                     float distance = Vector3.Distance(boid.position, otherBoid.position);
-
-                    // Penalize if too close
-                    if (distance < separationThreshold)
+                    if (distance < variables.cohesionRadius)
                     {
-                        totalSeparation += 1.0f / (distance + 1.0f); // Adjust as needed
+                        averageAlignment += otherBoid.forward;
+                        center += otherBoid.position;
                     }
                 }
             }
-        }
 
-        return totalSeparation / boids.Length;
-    }
+            averageAlignment /= boid.neighborCount;
+            float divergence = Vector3.Angle(boid.forward, averageAlignment);
+            cost1 += Mathf.Pow(divergence, 2);
 
-    float AlignmentFitness(Boid[] boids)
-    {
-        Vector3 averageVelocity = Vector3.zero;
+            center /= boid.neighborCount;
+            float distanceToCenter = Vector3.Distance(boid.position, center);
+            float keepDistance = variables.cohesionRadius * 0.5f;
 
-        foreach (Boid boid in boids)
-        {
-            averageVelocity += boid.velocity;
-        }
-
-        averageVelocity /= boids.Length;
-
-        float totalAlignment = 0.0f;
-
-        foreach (Boid boid in boids)
-        {
-            totalAlignment += Vector3.Dot(boid.velocity.normalized, averageVelocity.normalized);
-        }
-
-        return totalAlignment / boids.Length;
-    }
-
-    float CohesionFitness(Boid[] boids)
-    {
-        float totalCohesion = 0.0f;
-
-        foreach (Boid boid in boids)
-        {
             foreach (Boid otherBoid in boids)
             {
                 if (boid != otherBoid)
                 {
                     float distance = Vector3.Distance(boid.position, otherBoid.position);
-
-                    // Reward for staying close
-                    if (distance < cohesionThreshold)
+                    if (distance <= keepDistance)
                     {
-                        totalCohesion += 1.0f / (distance + 1.0f); // Adjust as needed
+                        cost2 += distanceToCenter * Mathf.Pow(distance - keepDistance, 2) / Mathf.Pow(keepDistance, 2);
+                    }
+                    else if (distance > keepDistance)
+                    {
+                        cost3 += distanceToCenter * Mathf.Pow(distance - keepDistance, 2) / Mathf.Pow(distanceToCenter - keepDistance, 2);
                     }
                 }
             }
+            cost2 /= boid.neighborCount;
+            cost3 /= boid.neighborCount;
         }
 
-        return totalCohesion / boids.Length;
+        cost = (cost1 + cost2 + cost3) / boids.Length;
+        fitness -= cost;
+        return fitness;
     }
 
-    void UpdateParticleVelocity(Particle particle, float[] gBestPosition)
+
+    private void UpdateParticle(Particle particle, int iteration)
     {
-        // Update particle velocities based on PSO equations
-        for (int i = 0; i < 3; i++)
+        float maxVelocity = problemSpace * 0.1f;
+        float u1 = Random.Range(0f, 1.0f);
+        float u2 = Random.Range(0f, 1.0f);
+
+        if (iteration > iterations * 0.7f)
         {
-            float r1 = Random.value;
-            float r2 = Random.value;
-            particle.velocity[i] = Mathf.Clamp(
-                inertiaWeight * particle.velocity[i] +
-                cognitiveWeight * r1 * (particle.pBestPosition[i] - particle.position[i]) +
-                socialWeight * r2 * (gBestPosition[i] - particle.position[i]),
-                -maxVelocity, maxVelocity
-            );
+            inertiaWeight = inertiaEnd;
         }
-    }
 
-    void UpdateParticlePosition(Particle particle)
-    {
-        // Update particle positions based on the calculated velocities
         for (int i = 0; i < 3; i++)
         {
+            particle.velocity[i] = inertiaWeight * particle.velocity[i] +
+             cognitiveWeight * u1 * (particle.pBestPosition[i] - particle.position[i]) +
+             socialWeight * u2 * (bestPosition[i] - particle.position[i]);
+
             particle.position[i] += particle.velocity[i];
         }
     }
 
-    void ApplyParametersToBoidSimulation(float cohesionWeight, float alignmentWeight, float separationWeight)
+    private void UpdateParameters(float BestCohesionWeight, float BestAlignmentWeight, float BestSeparationWeight)
     {
-        foreach (Boid boid in boids)
-        {
-            boid.variables.cohesionWeight = cohesionWeight;
-            boid.variables.alignmentWeight = alignmentWeight;
-            boid.variables.separationWeight = separationWeight;
-        }
+        variables.cohesionWeight = BestCohesionWeight;
+        variables.alignmentWeight = BestAlignmentWeight;
+        variables.separationWeight = BestSeparationWeight;
     }
 
-    public class Particle
+    private void Finish()
     {
-        public float[] position;        // Particle position [cohesionWeight, alignmentWeight, separationWeight]
-        public float[] velocity;        // Particle velocity
-        public float[] pBestPosition;   // Personal best position
+        UpdateParameters(bestPosition[0], bestPosition[1], bestPosition[2]);
+        foreach (Boid boid in boids)
+        {
+            Destroy(boid.gameObject);
+        }
+        Debug.Log("Best cohesion weight: " + bestPosition[0]);
+        Debug.Log("Best alignment weight: " + bestPosition[1]);
+        Debug.Log("Best separation weight: " + bestPosition[2]);
+        foreach (Particle particle in particles)
+        {
+            //Print particle number of particle with best fitness
+            if (particle.pBestFitness >= bestFitness)
+            {
+                Debug.Log("Particle " + System.Array.IndexOf(particles, particle) + " has the best fitness: " + bestFitness);
+                break;
+            }
+        }
+        Debug.Log("Algorithm took " + (Time.realtimeSinceStartup - time) + " seconds to run.");
+        isRunning = false;
     }
 }
