@@ -14,16 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cubeSize: 200
   boidCount: 500
+  spawnRadius: 0
   color: {r: 0, g: 0, b: 0, a: 0}
   leaderCount: 0
   predatorCount: 0
-  minSpeed: 40
-  maxSpeed: 60
+  minSpeed: 70
+  maxSpeed: 140
   cohesionRadius: 10
   separationRadius: 5
-  separationWeight: 0.848
-  alignmentWeight: 0
-  cohesionWeight: 0
+  cohesionWeight: 4.1335826
+  alignmentWeight: 9.311817
+  separationWeight: 4.282728
+  velocityDamping: 0
   collisionRadius: 10
   collisionAvoidDst: 80
   avoidCollisionWeight: 500
