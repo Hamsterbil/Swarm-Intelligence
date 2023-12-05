@@ -1205,7 +1205,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 23
+  m_RootOrder: 22
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &976536477
 MonoBehaviour:
@@ -1232,56 +1232,10 @@ MonoBehaviour:
   cognitiveWeight: 2
   socialWeight: 2
   problemSpace: 10
+  maxVelocity: 0
   bestFitness: -3.4028235e+38
   convergence: 0
-  bestPosition: []
---- !u!1 &1163823782
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1163823783}
-  - component: {fileID: 1163823784}
-  m_Layer: 0
-  m_Name: BoidSpawner
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1163823783
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1163823782}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_RootOrder: 21
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1163823784
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1163823782}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ac32e637ee056a94d92c9a05e920f10a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  variables: {fileID: 11400000, guid: 1c5579c0dd67abf4787f43c1a211c1c9, type: 2}
-  prefab: {fileID: 8922496366600821678, guid: 4d3c12da0a858b3408954f626dfbec18, type: 3}
-  radius: 10
+  bestPositions: []
 --- !u!1 &1231453841
 GameObject:
   m_ObjectHideFlags: 0
@@ -2282,7 +2236,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 22
+  m_RootOrder: 21
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2120839340
 MonoBehaviour:
@@ -2297,5 +2251,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boids: []
+  boidPrefab: {fileID: 8922496366600821678, guid: 4d3c12da0a858b3408954f626dfbec18, type: 3}
   variables: {fileID: 11400000, guid: 1c5579c0dd67abf4787f43c1a211c1c9, type: 2}
-  cubeSize: 0

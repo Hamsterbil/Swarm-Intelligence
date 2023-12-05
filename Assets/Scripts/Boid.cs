@@ -4,11 +4,10 @@ using UnityEngine;
 
 public class Boid : MonoBehaviour
 {
-    public Variables variables;
+    private Variables variables;
 
     public Vector3 velocity;
     public Vector3 acceleration;
-
     public Vector3 forward;
     public Vector3 position;
 

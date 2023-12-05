@@ -5,18 +5,24 @@ using UnityEngine;
 public class Manager : MonoBehaviour
 {
     // const int threadGroupSize = 1024;
-    public Boid[] boids;
+    private Boid[] boids;
+    public Boid boidPrefab;
     public Variables variables;
     // public ComputeShader compute;
-    public float cubeSize;
+    private float cubeSize;
+    private int spawnRadius;
 
     void Start()
     {
+        spawnRadius = variables.spawnRadius;
         cubeSize = variables.cubeSize / 2;
-        boids = FindObjectsOfType<Boid>();
-        foreach (Boid boid in boids)
+        boids = new Boid[variables.boidCount];
+        for (int i = 0; i < variables.boidCount; i++)
         {
-            boid.StartBoid(variables);
+            Vector3 spawnPosition = transform.position + Random.insideUnitSphere * spawnRadius;
+            Quaternion spawnRotation = Random.rotation;
+
+            boids[i] = SpawnBoids(spawnPosition, spawnRotation);
         }
         boids[0].drawToggle = true;
     }
@@ -81,6 +87,13 @@ public class Manager : MonoBehaviour
     //     }
     // }
 
+    public Boid SpawnBoids(Vector3 position, Quaternion rotation)
+    {
+        Boid newBoid = Instantiate(boidPrefab, position, rotation);
+        newBoid.StartBoid(variables);
+        return newBoid;
+    }
+
     public void UpdateBoids(Boid[] boids, bool PSO, bool CheckCollision, float cohesionWeight, float alignmentWeight, float separationWeight)
     {
         foreach (Boid boid in boids)
@@ -127,7 +140,7 @@ public class Manager : MonoBehaviour
         }
     }
 
-    void withinCube(Boid boid)
+    public void withinCube(Boid boid)
     {
         float x_offset = 0;
         float y_offset = 0;

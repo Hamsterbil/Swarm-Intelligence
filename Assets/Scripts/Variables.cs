@@ -9,6 +9,7 @@ public class Variables : ScriptableObject
     [Header("Spawner and playfield")]
     public float cubeSize;
     public int boidCount;
+    public int spawnRadius;
 
     [Header("Boid variables")]
     public Color color;

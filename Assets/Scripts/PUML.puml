@@ -1,0 +1,124 @@
+@startuml
+
+class Variables {
+  + float cubeSize
+  + int boidCount
+  + Color color
+  + int leaderCount
+  + int predatorCount
+  + float minSpeed
+  + float maxSpeed
+  + float cohesionRadius
+  + float separationRadius
+  + float cohesionWeight
+  + float alignmentWeight
+  + float separationWeight
+  + float velocityDamping
+  + float collisionRadius
+  + float collisionAvoidDst
+  + float avoidCollisionWeight
+  + LayerMask obstacleMask
+}
+
+class Boid {
+  - Variables variables
+  + Vector3 velocity
+  + Vector3 acceleration
+  + Vector3 forward
+  + Vector3 position
+  + Vector3 cohesion
+  + Vector3 separation
+  + Vector3 alignment
+  + int neighborCount
+  - bool drawToggle
+
+  + void StartBoid(Variables boidVariables)
+  + void UpdateBoid(bool checkCollision, float cohesionWeight, float alignmentWeight, float separationWeight)
+  + bool imBouttaCollide()
+  + Vector3 rayCircle()
+  + Vector3 SteerTowards(Vector3 vector)
+  + void OnDrawGizmos()
+}
+
+class Manager {
+  - Boid[] boids
+  + Boid boidPrefab
+  + Variables variables
+  - float cubeSize
+  - int spawnRadius
+
+  - void Start()
+  - void Update()
+  + void SpawnBoids(Boid boid, Variables variables, Boid prefab, Vector3 position, Quaternion rotation)
+  + void UpdateBoids(Boid[] boids, bool PSO, bool CheckCollision, float cohesionWeight, float alignmentWeight, float separationWeight)
+  - void withinCube(Boid boid)
+  - void OnDrawGizmos()
+}
+
+class PSO {
+  + Manager manager
+  + Variables variables
+  - Particle[] particles
+  - Boid boids
+  + Boid boidPrefab
+  - float time
+  - bool isRunning
+
+  + int simulationTicks
+  + int numBoids
+  - Vector3[] boidPositions
+  - Vector3[] boidDirections
+
+  + int iterations
+  + int numParticles
+  - float inertiaWeight
+  + float inertiaStart
+  + float inertiaEnd
+  + float cognitiveWeight
+  + float socialWeight
+  + float problemSpace
+  + float maxVelocity  
+  - float convergence
+  - float bestFitness
+  - float[] bestPositions
+
+  - void Update()
+  - void InitializeParticles()
+  - void InitializeBoids()
+  - void OptimizeParameters()
+  - void ShortBoidSimulation(Particle particle)
+  - float EvaluateFitness()
+  - void UpdateParticle(Particle particle, int iteration)
+  - void UpdateParameters(float bestCohesionWeight, float bestAlignmentWeight, float bestSeparationWeight)
+  - void Finish()
+}
+
+class Particle {
+  - float[] position
+  - float[] velocity
+  - float[] pBestPosition
+  - float pBestFitness
+  - float simulationFitness
+}
+
+class Collision {
+  + int numPoints
+  + Vector3[] directions
+  + Collision()
+}
+
+skinparam linetype polyline
+skinparam linetype ortho
+
+PSO --> Manager
+PSO <|-- Particle
+
+PSO *-- Boid
+Manager *-- Boid
+
+Variables -> Boid
+Variables -> Manager
+Variables -right-> PSO
+
+Boid -right- Collision
+@enduml
