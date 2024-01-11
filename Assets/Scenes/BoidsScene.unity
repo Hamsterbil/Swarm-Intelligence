@@ -2250,6 +2250,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 813a9d1111f06004081907ee856d6de4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  boids: []
   boidPrefab: {fileID: 8922496366600821678, guid: 4d3c12da0a858b3408954f626dfbec18, type: 3}
   variables: {fileID: 11400000, guid: 1c5579c0dd67abf4787f43c1a211c1c9, type: 2}
