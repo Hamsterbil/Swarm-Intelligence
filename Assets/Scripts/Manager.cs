@@ -4,16 +4,16 @@ using UnityEngine;
 
 public class Manager : MonoBehaviour
 {
-    // const int threadGroupSize = 1024;
     private Boid[] boids;
     public Boid boidPrefab;
     public Variables variables;
-    // public ComputeShader compute;
     private float cubeSize;
     private int spawnRadius;
+    public bool PSOrunning;
 
     void Start()
     {
+        PSOrunning = false;
         spawnRadius = variables.spawnRadius;
         cubeSize = variables.cubeSize / 2;
         boids = new Boid[variables.boidCount];
@@ -29,63 +29,11 @@ public class Manager : MonoBehaviour
 
     void Update()
     {
-        UpdateBoids(boids, false, true, variables.cohesionWeight, variables.alignmentWeight, variables.separationWeight);
-
-        // if (boids != null)
-        // {
-        //     int numBoids = boids.Length;
-        //     var boidData = new BoidData[numBoids];
-
-        //     for (int i = 0; i < boids.Length; i++)
-        //     {
-        //         boidData[i].position = boids[i].position;
-        //         boidData[i].forward = boids[i].forward;
-        //     }
-
-        //     var boidBuffer = new ComputeBuffer(numBoids, BoidData.Size);
-        //     boidBuffer.SetData(boidData);
-
-        //     compute.SetBuffer(0, "boids", boidBuffer);
-        //     compute.SetInt("numBoids", boids.Length);
-        //     compute.SetFloat("viewRadius", variables.cohesionRadius);
-        //     compute.SetFloat("avoidRadius", variables.separationRadius);
-
-        //     int threadGroups = Mathf.CeilToInt(numBoids / (float)threadGroupSize);
-        //     compute.Dispatch(0, threadGroups, 1, 1);
-
-        //     boidBuffer.GetData(boidData);
-
-        //     for (int i = 0; i < boids.Length; i++)
-        //     {
-        //         boids[i].alignment = boidData[i].alignment;
-        //         boids[i].cohesion = boidData[i].cohesion;
-        //         boids[i].separation = boidData[i].separation;
-        //         boids[i].neighborCount = boidData[i].neighborCount;
-        //         withinCube(boids[i]);
-        //         boids[i].UpdateBoid(true, variables.cohesionWeight, variables.alignmentWeight, variables.separationWeight);
-        //     }
-
-        //     boidBuffer.Release();
-        // }
+        if (!PSOrunning)
+        {
+            UpdateBoids(boids, false, true, variables.cohesionWeight, variables.alignmentWeight, variables.separationWeight);
+        }
     }
-    // public struct BoidData
-    // {
-    //     public Vector3 position;
-    //     public Vector3 forward;
-
-    //     public Vector3 alignment;
-    //     public Vector3 cohesion;
-    //     public Vector3 separation;
-    //     public int neighborCount;
-
-    //     public static int Size
-    //     {
-    //         get
-    //         {
-    //             return sizeof(float) * 3 * 5 + sizeof(int);
-    //         }
-    //     }
-    // }
 
     public Boid SpawnBoids(Vector3 position, Quaternion rotation)
     {
@@ -109,9 +57,9 @@ public class Manager : MonoBehaviour
                     float distance = Vector3.Distance(boid.position, otherBoid.position);
                     if (distance < variables.cohesionRadius)
                     {
-                        boid.alignment += otherBoid.forward;
-                        boid.cohesion += otherBoid.position;
                         boid.neighborCount++;
+                        boid.alignment += otherBoid.velocity;
+                        boid.cohesion += otherBoid.position;
                         if (distance < variables.separationRadius)
                         {
                             boid.separation += boid.position - otherBoid.position;

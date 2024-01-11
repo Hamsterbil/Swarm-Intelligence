@@ -13,8 +13,8 @@ public class Variables : ScriptableObject
 
     [Header("Boid variables")]
     public Color color;
-    public int leaderCount;
-    public int predatorCount;
+    // public int leaderCount;
+    // public int predatorCount;
 
     public float minSpeed;
     public float maxSpeed;
@@ -29,7 +29,7 @@ public class Variables : ScriptableObject
     public float alignmentWeight;
     [Range(0.0F, 10F)]
     public float separationWeight;
-    [Range(0.0F, 10F)]
+    [Range(0.0F, 1F)]
     public float velocityDamping;
 
 

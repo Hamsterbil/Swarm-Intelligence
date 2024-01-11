@@ -40,16 +40,16 @@ public class Boid : MonoBehaviour
             alignment /= neighborCount;
             cohesion /= neighborCount;
 
-            separation = SteerTowards(separation) * separationWeight;
-            alignment = SteerTowards(alignment) * alignmentWeight;
-            cohesion = SteerTowards(cohesion - position) * cohesionWeight;
+            separation = GoTowards(separation) * separationWeight;
+            alignment = GoTowards(alignment) * alignmentWeight;
+            cohesion = GoTowards(cohesion - position) * cohesionWeight;
 
             acceleration += separation;
             acceleration += alignment;
             acceleration += cohesion;
         }
 
-        if (imBouttaCollide() && checkCollision)
+        if (checkCollision && collision())
         {
             acceleration += rayCircle() * variables.avoidCollisionWeight;
         }
@@ -74,7 +74,7 @@ public class Boid : MonoBehaviour
         //     (float)neighborCount / 5
         // );
     }
-    bool imBouttaCollide()
+    bool collision()
     {
         RaycastHit hit;
         if (
@@ -116,7 +116,7 @@ public class Boid : MonoBehaviour
         return forward;
     }
     
-    Vector3 SteerTowards (Vector3 vector) {
+    Vector3 GoTowards (Vector3 vector) {
         return vector.normalized * variables.maxSpeed - velocity;
     }
 

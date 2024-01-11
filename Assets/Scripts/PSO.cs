@@ -9,9 +9,8 @@ public class PSO : MonoBehaviour
     // private Particle[] batch; // Batch of particles to run simulations on, to evaluate fitness
     public Particle[] particles; // Array of particles
     private Boid[] boids; // Array of Boids. Used to run each simulation, where position is reset for each particle
-    public Boid boidPrefab; // Boid prefab to instantiate Boids. I don't know how to instantiate a Boid without a prefab
     private float time; // Time variable to measure how long the algorithm takes to run
-    private bool isRunning = false; // Boolean to check if the algorithm is running
+    private bool isRunning; // Boolean to check if the algorithm is running
 
     [Header("Simulation Parameters (For Fitness Evaluation)")]
     // public int concurrentSimulations; // Number of concurrent simulations (N)
@@ -29,14 +28,16 @@ public class PSO : MonoBehaviour
     public float cognitiveWeight; // Positive constant (C1)
     public float socialWeight; // Positive constant (C2)
     public float problemSpace; // Problem space (X)
-    public float maxVelocity; // Maximum velocity (Vmax)
+    private float maxVelocity; // Maximum velocity (Vmax)
     public float bestFitness; // Stores the best fitness score (fb)
-    public float convergence;
+    private float convergence;
+    private float[] convergenceList;
     public float[] bestPositions; // Stores the best parameter values (gb)
 
     [System.Serializable]
     public class Particle
     {
+        public List<Vector3> positions;
         public float[] position; // Current position (Xi)
         public float[] velocity; // Current velocity (Vi)
         public float[] pBestPosition; // Personal best position (Pi)
@@ -44,11 +45,17 @@ public class PSO : MonoBehaviour
         public float simulationFitness; // Fitness during simulation. Used to divide by simulation ticks to get average fitness per simulation tick
     }
 
+    private void Start()
+    {
+        isRunning = false;
+    }
+
     private void Update()
     {
         //Press space to start the algorithm. This is step one.
         if (Input.GetKeyDown(KeyCode.Space) && !isRunning)
         {
+            convergenceList = new float[iterations];
             maxVelocity = problemSpace * 0.1f;
             inertiaWeight = inertiaStart;
             bestFitness = float.MinValue;
@@ -76,9 +83,51 @@ public class PSO : MonoBehaviour
         }
     }
 
+    //draw
+    void OnDrawGizmos()
+    {
+        if (particles != null)
+        {
+            foreach (Particle particle in particles)
+            {
+                // Draw a line connecting the positions of the particle
+                Gizmos.color = Color.yellow;
+                for (int j = 1; j < particle.positions.Count; j++)
+                {
+                    Vector3 pos = new Vector3(particle.positions[j].x - 100, particle.positions[j].y + 100, particle.positions[j].z);
+                    //Make last line blue
+                    if (j == particle.positions.Count - 1)
+                    {
+                        Gizmos.color = Color.blue;
+                    }
+                    Gizmos.DrawLine(new Vector3(particle.positions[j - 1].x - 100, particle.positions[j - 1].y + 100, particle.positions[j - 1].z), pos);
+                }
+
+                // Draw spheres at each position
+
+                foreach (Vector3 position in particle.positions)
+                {
+                    Vector3 pos = new Vector3(position.x - 100, position.y + 100, position.z);
+                    Gizmos.color = Color.red;
+                    //if first position, make blue
+                    if (particle.positions.IndexOf(position) == 0)
+                    {
+                        Gizmos.color = Color.blue;
+                    }
+                    if (particle.positions.IndexOf(position) == particle.positions.Count - 1)
+                    {
+                        Gizmos.color = Color.green;
+                        //Draw a green line going straight up, from the last position
+                        Gizmos.DrawLine(pos, pos + Vector3.up * 10);
+                    }
+                    Gizmos.DrawSphere(pos, 0.5f);
+                }
+            }
+        }
+    }
+
     private void InitializeParticles()
     {
-        //Particles are initialized with random positions. Positions are the values meant to be optimized (cohesion, alignment, separation)
         particles = new Particle[numParticles];
         for (int i = 0; i < numParticles; i++)
         {
@@ -92,6 +141,7 @@ public class PSO : MonoBehaviour
             }
             particles[i].pBestPosition = new float[3];
             particles[i].pBestFitness = float.MinValue;
+            particles[i].positions = new List<Vector3>();
         }
     }
     private void InitializeBoids()
@@ -125,6 +175,7 @@ public class PSO : MonoBehaviour
             convergence = 0;
             foreach (Particle particle in particles) //batch can be used instead of particles, if batches are chosen to be used
             {
+                particle.positions.Add(new Vector3(particle.position[0] * 10, particle.position[1] * 10, particle.position[2] * 10));
                 particle.simulationFitness = 0;
                 ShortBoidSimulation(particle);
                 float averageFitness = particle.simulationFitness;
@@ -141,12 +192,43 @@ public class PSO : MonoBehaviour
                     bestFitness = averageFitness;
                     bestPositions = particle.position;
                 }
+
                 //Calculate convergence
                 convergence += particle.simulationFitness / particles.Length;
-                //--------------------STEP THREE! UPDATE PARTICLE VELOCITY AND POSITION--------------------//
                 UpdateParticle(particle, i);
             }
-        Debug.Log("Particle 0 velocities: " + particles[0].velocity[0] + ", " + particles[0].velocity[1] + ", " + particles[0].velocity[2] + ".");
+            //every 5 iterations
+            if (i % 5 == 0)
+            {
+                Debug.Log("Iteration " + i);
+                float[] fitnessList = new float[particles.Length];
+                foreach (Particle particle in particles)
+                {
+                    fitnessList[System.Array.IndexOf(particles, particle)] = particle.simulationFitness;
+                }
+                //return number of fitnesses between <0 and 0.1, 0.1 and 0.2, 0.2 and 0.3, etc.
+                int[] fitnessDistribution = new int[10];
+                foreach (float fitness in fitnessList)
+                {
+                    for (int j = 0; j < fitnessDistribution.Length; j++)
+                    {
+                        if (fitness >= j * 0.1f && fitness < (j + 1) * 0.1f)
+                        {
+                            if (fitness < 0)
+                            {
+                                fitnessDistribution[0]++;
+                            }
+                            fitnessDistribution[j]++;
+                        }
+                    }
+                }
+                for (int k = 0; k < fitnessDistribution.Length; k++)
+                {
+                    Debug.Log("Fitnesses between " + k * 0.1f + " and " + (k + 1) * 0.1f + ": " + fitnessDistribution[k]);
+                }
+            }
+
+            convergenceList[i] = convergence;
 
             // If convergence is 2% close to bestfitness, then stop the algorithm
             if (convergence >= bestFitness * 0.98f)
@@ -186,58 +268,43 @@ public class PSO : MonoBehaviour
     private float EvaluateFitness()
     {
         float fitness = 1;
-        float cost = 0;
         float cost1 = 0;
         float cost2 = 0;
         float cost3 = 0;
 
-        Vector3 averageAlignment = Vector3.zero;
-        Vector3 center = Vector3.zero;
+        Vector3 cohesion = Vector3.zero;
+        Vector3 alignment = Vector3.zero;
+        Vector3 separation = Vector3.zero;
 
         foreach (Boid boid in boids)
         {
-            foreach (Boid otherBoid in boids)
+            if (boid.neighborCount > 0)
             {
-                if (boid != otherBoid)
+                cohesion = boid.cohesion / boid.neighborCount;
+                alignment = boid.alignment / boid.neighborCount;
+
+                float divergence = Vector3.Angle(alignment, boid.forward);
+                cost1 += Mathf.Pow(divergence, 2);
+
+                float distanceToCenter = Vector3.Distance(boid.position, cohesion);
+                cost2 += distanceToCenter / Mathf.Pow(variables.cohesionRadius, 2);
+
+                foreach (Boid otherBoid in boids)
                 {
-                    float distance = Vector3.Distance(boid.position, otherBoid.position);
-                    if (distance < variables.cohesionRadius)
+                    if (boid != otherBoid)
                     {
-                        averageAlignment += otherBoid.forward;
-                        center += otherBoid.position;
+                        float distance = Vector3.Distance(boid.position, otherBoid.position);
+                        if (distance < variables.separationRadius)
+                        {
+                            cost3 += Mathf.Pow(variables.separationRadius - distance, 2) / Mathf.Pow(variables.separationRadius, 2);
+                        }
                     }
                 }
+                cost3 /= boid.neighborCount;
             }
-
-            averageAlignment /= boid.neighborCount;
-            float divergence = Vector3.Angle(boid.forward, averageAlignment);
-            cost1 += Mathf.Pow(divergence, 2);
-
-            center /= boid.neighborCount;
-            float distanceToCenter = Vector3.Distance(boid.position, center);
-            float keepDistance = variables.cohesionRadius * 0.5f;
-
-            foreach (Boid otherBoid in boids)
-            {
-                if (boid != otherBoid)
-                {
-                    float distance = Vector3.Distance(boid.position, otherBoid.position);
-                    if (distance <= variables.separationRadius)
-                    {
-                        cost2 += Mathf.Pow(variables.separationRadius - distance, 2) / variables.separationRadius;
-                    }
-                    else if (distance <= variables.cohesionRadius)
-                    {
-                        distance -= variables.separationRadius;
-                        cost3 += distance / (variables.cohesionRadius - variables.separationRadius);
-                    }
-                }
-            }
-            cost2 /= boid.neighborCount;
-            cost3 /= boid.neighborCount;
         }
 
-        cost = (cost1 + cost2 + cost3) / boids.Length;
+        float cost = (cost1 + cost2 + cost3) / boids.Length;
         fitness -= cost;
         return fitness;
     }
@@ -245,16 +312,12 @@ public class PSO : MonoBehaviour
 
     private void UpdateParticle(Particle particle, int iteration)
     {
-        float u1 = Random.Range(0f, 1.0f);
-        float u2 = Random.Range(0f, 1.0f);
-
-        if (iteration > iterations * 0.7f)
-        {
-            inertiaWeight = inertiaEnd;
-        }
+        inertiaWeight = Mathf.Lerp(inertiaStart, inertiaEnd, (float)iteration / iterations);
 
         for (int i = 0; i < 3; i++)
         {
+            float u1 = Random.Range(0f, 1.0f);
+            float u2 = Random.Range(0f, 1.0f);
             //v = w * v + c1 * u1 * (pbest - x) /  + c2 * u2 * (gbest - x)
             particle.velocity[i] = Mathf.Clamp(inertiaWeight * particle.velocity[i] +
              cognitiveWeight * u1 * (particle.pBestPosition[i] - particle.position[i]) +
@@ -277,6 +340,11 @@ public class PSO : MonoBehaviour
         {
             Destroy(boid.gameObject);
         }
+        // for (int i = 0; i < convergenceList.Length; i++)
+        // {
+        //     Debug.Log(convergenceList[i]);
+        // }
+
         Debug.Log("Best cohesion weight: " + bestPositions[0]);
         Debug.Log("Best alignment weight: " + bestPositions[1]);
         Debug.Log("Best separation weight: " + bestPositions[2]);
@@ -285,7 +353,7 @@ public class PSO : MonoBehaviour
             //Print particle number of particle with best fitness
             if (particle.pBestFitness >= bestFitness)
             {
-                Debug.Log("Particle " + System.Array.IndexOf(particles, particle) + " has the best fitness: " + bestFitness);
+                Debug.Log("Particle " + System.Array.IndexOf(particles, particle) + " has the best fitness: " + bestFitness + ". With convergence at " + convergence + ".");
                 break;
             }
         }
